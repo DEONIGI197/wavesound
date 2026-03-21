@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WaveSound - Music Experience</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #050a09; /* Очень темный изумрудный */
+            color: #e2e8f0;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .glass {
+            background: rgba(16, 28, 26, 0.7);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .wave-container {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .wave-circle {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, #10b981 0%, transparent 70%);
+            border-radius: 50%;
+            opacity: 0.4;
+            animation: pulse-wave 3s infinite ease-in-out;
+        }
+
+        @keyframes pulse-wave {
+            0% { transform: scale(0.8); opacity: 0.3; }
+            50% { transform: scale(1.1); opacity: 0.6; }
+            100% { transform: scale(0.8); opacity: 0.3; }
+        }
+
+        .active-tab {
+            color: #10b981;
+        }
+
+        .progress-bar::-webkit-slider-runnable-track {
+            background: rgba(255, 255, 255, 0.1);
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        .progress-bar::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 12px;
+            width: 12px;
+            background: #10b981;
+            border-radius: 50%;
+            margin-top: -4px;
+        }
+
+        .safe-area-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        /* Скрытие секций */
+        .page { display: none; height: 100vh; overflow-y: auto; padding-bottom: 160px; }
+        .page.active { display: block; }
+        
+        /* Полноэкранный плеер */
+        #full-player {
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.33, 1, 0.68, 1);
+        }
+        #full-player.open {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app" class="relative h-screen w-full">
+        
+        <section id="home" class="page active px-6 pt-10">
+            <div class="flex justify-between items-center mb-8">
+                <h1 class="text-2xl font-bold">Wave<span class="text-emerald-500">Sound</span></h1>
+                <i data-lucide="search" class="w-6 h-6"></i>
+            </div>
+            
+            <div class="flex flex-col items-center justify-center mt-12">
+                <div class="wave-container" onclick="playRandom()">
+                    <div class="wave-circle"></div>
+                    <div class="relative z-10 flex flex-col items-center">
+                        <div class="bg-emerald-500 p-6 rounded-full shadow-[0_0_30px_rgba(16,185,129,0.5)]">
+                            <i data-lucide="play" class="w-10 h-10 text-white fill-current"></i>
+                        </div>
+                        <span class="mt-6 text-xl font-semibold tracking-wide">Моя волна</span>
+                        <button class="mt-2 text-sm text-gray-400 bg-white/5 px-4 py-1 rounded-full border border-white/10">Настроить</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-16">
+                <h3 class="text-lg font-semibold mb-4">Для вас</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white/5 p-3 rounded-2xl border border-white/5">
+                        <div class="aspect-square bg-emerald-900/30 rounded-xl mb-2 overflow-hidden">
+                            <img src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300&h=300&fit=crop" class="w-full h-full object-cover">
+                        </div>
+                        <p class="text-sm font-medium truncate">Deep Focus</p>
+                    </div>
+                    <div class="bg-white/5 p-3 rounded-2xl border border-white/5">
+                        <div class="aspect-square bg-emerald-900/30 rounded-xl mb-2 overflow-hidden">
+                            <img src="https://images.unsplash.com/photo-1493225255756-d9584f8606e9?w=300&h=300&fit=crop" class="w-full h-full object-cover">
+                        </div>
+                        <p class="text-sm font-medium truncate">Chill Mix</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="collection" class="page px-6 pt-10">
+            <h2 class="text-2xl font-bold mb-6">Коллекция</h2>
+            
+            <div class="flex items-center gap-4 bg-emerald-600/20 p-4 rounded-2xl mb-8 border border-emerald-500/20">
+                <div class="bg-emerald-500 p-3 rounded-xl">
+                    <i data-lucide="heart" class="text-white fill-current"></i>
+                </div>
+                <div>
+                    <p class="font-semibold text-lg">Мне нравится</p>
+                    <p class="text-sm text-gray-400" id="liked-count">128 треков</p>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-gray-400 text-sm font-medium mb-3 uppercase tracking-wider">Ваши плейлисты</h3>
+                    <div class="grid grid-cols-2 gap-4" id="playlists-grid">
+                        </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="profile" class="page px-6 pt-10">
+            <div class="flex flex-col items-center mb-10">
+                <div class="relative p-1 rounded-full bg-gradient-to-tr from-emerald-500 to-yellow-400 mb-4">
+                    <img id="user-avatar" src="https://ui-avatars.com/api/?name=User&background=10b981&color=fff" class="w-24 h-24 rounded-full border-4 border-[#050a09]">
+                </div>
+                <h2 id="user-name" class="text-xl font-bold">Загрузка...</h2>
+                <p id="user-handle" class="text-gray-500">@username</p>
+            </div>
+
+            <div class="space-y-3">
+                <button class="w-full flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="link" class="text-emerald-500"></i>
+                        <span>Импорт из Яндекс Музыки</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-600"></i>
+                </button>
+                <button class="w-full flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="upload-cloud" class="text-emerald-500"></i>
+                        <span>Загрузить .mp3 файл</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-600"></i>
+                </button>
+            </div>
+        </section>
+
+        <div id="mini-player" class="fixed bottom-20 left-4 right-4 h-16 glass rounded-2xl flex items-center px-3 z-40 border border-white/10 cursor-pointer hidden">
+            <img id="mini-cover" src="" class="w-10 h-10 rounded-lg object-cover mr-3 shadow-lg">
+            <div class="flex-1 min-w-0" onclick="toggleFullPlayer()">
+                <p id="mini-title" class="text-sm font-bold truncate"></p>
+                <p id="mini-artist" class="text-xs text-gray-400 truncate"></p>
+            </div>
+            <div class="flex items-center gap-4 px-2">
+                <button id="mini-play-btn" onclick="togglePlay(event)">
+                    <i data-lucide="play" class="w-6 h-6 fill-current text-emerald-500"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="full-player" class="fixed inset-0 bg-[#050a09] z-50 px-8 pt-12 flex flex-col items-center">
+            <button onclick="toggleFullPlayer()" class="absolute top-6 left-6 text-gray-400">
+                <i data-lucide="chevron-down" class="w-8 h-8"></i>
+            </button>
+            
+            <div class="w-full aspect-square mt-12 rounded-3xl overflow-hidden shadow-2xl shadow-emerald-900/20">
+                <img id="full-cover" src="" class="w-full h-full object-cover">
+            </div>
+
+            <div class="w-full mt-10">
+                <h2 id="full-title" class="text-2xl font-bold truncate"></h2>
+                <p id="full-artist" class="text-emerald-500 font-medium mt-1"></p>
+            </div>
+
+            <div class="w-full mt-8">
+                <input type="range" id="progress" value="0" step="1" class="w-full progress-bar accent-emerald-500 bg-transparent appearance-none">
+                <div class="flex justify-between text-xs text-gray-500 mt-2">
+                    <span id="current-time">0:00</span>
+                    <span id="duration">0:00</span>
+                </div>
+            </div>
+
+            <div class="w-full flex justify-between items-center mt-8">
+                <button class="text-gray-400"><i data-lucide="shuffle" class="w-6 h-6"></i></button>
+                <div class="flex items-center gap-8">
+                    <button onclick="prevTrack()"><i data-lucide="skip-back" class="w-8 h-8 fill-current"></i></button>
+                    <button onclick="togglePlay(event)" class="bg-emerald-500 p-6 rounded-full shadow-lg">
+                        <i id="full-play-icon" data-lucide="play" class="w-8 h-8 text-white fill-current"></i>
+                    </button>
+                    <button onclick="nextTrack()"><i data-lucide="skip-forward" class="w-8 h-8 fill-current"></i></button>
+                </div>
+                <button class="text-gray-400"><i data-lucide="repeat" class="w-6 h-6"></i></button>
+            </div>
+        </div>
+
+        <nav class="fixed bottom-0 left-0 right-0 h-20 glass flex items-center justify-around px-4 safe-area-bottom z-40">
+            <button onclick="showPage('home')" class="nav-btn active-tab flex flex-col items-center gap-1">
+                <i data-lucide="home" class="w-6 h-6"></i>
+                <span class="text-[10px]">Главная</span>
+            </button>
+            <button onclick="showPage('collection')" class="nav-btn flex flex-col items-center gap-1 text-gray-500">
+                <i data-lucide="library" class="w-6 h-6"></i>
+                <span class="text-[10px]">Коллекция</span>
+            </button>
+            <button onclick="showPage('profile')" class="nav-btn flex flex-col items-center gap-1 text-gray-500">
+                <i data-lucide="user" class="w-6 h-6"></i>
+                <span class="text-[10px]">Профиль</span>
+            </button>
+        </nav>
+
+    </div>
+
+    <audio id="audio-player"></audio>
+
+    <script>
+        // Инициализация Telegram
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.backgroundColor = '#050a09';
+        tg.headerColor = '#050a09';
+
+        if (tg.initDataUnsafe.user) {
+            document.getElementById('user-name').innerText = tg.initDataUnsafe.user.first_name;
+            document.getElementById('user-handle').innerText = `@${tg.initDataUnsafe.user.username || 'user'}`;
+            if (tg.initDataUnsafe.user.photo_url) {
+                document.getElementById('user-avatar').src = tg.initDataUnsafe.user.photo_url;
+            }
+        }
+
+        // Данные треков
+        const defaultTracks = [
+            {
+                title: "In the Shadow",
+                artist: "Moonlight Echo",
+                cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&h=500&fit=crop",
+                url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+            },
+            {
+                title: "Emerald Forest",
+                artist: "Green Nature",
+                cover: "https://images.unsplash.com/photo-1459749411177-042180ce673c?w=500&h=500&fit=crop",
+                url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
+            },
+            {
+                title: "Cyber City",
+                artist: "Synth Runner",
+                cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&h=500&fit=crop",
+                url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
+            }
+        ];
+
+        let currentTrackIndex = 0;
+        let isPlaying = false;
+        const audio = document.getElementById('audio-player');
+
+        // Навигация
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active-tab');
+                btn.classList.add('text-gray-500');
+            });
+            event.currentTarget.classList.add('active-tab');
+            event.currentTarget.classList.remove('text-gray-500');
+        }
+
+        // Логика плеера
+        function loadTrack(index) {
+            const track = defaultTracks[index];
+            audio.src = track.url;
+            document.getElementById('mini-title').innerText = track.title;
+            document.getElementById('mini-artist').innerText = track.artist;
+            document.getElementById('mini-cover').src = track.cover;
+            
+            document.getElementById('full-title').innerText = track.title;
+            document.getElementById('full-artist').innerText = track.artist;
+            document.getElementById('full-cover').src = track.cover;
+            
+            document.getElementById('mini-player').classList.remove('hidden');
+        }
+
+        function togglePlay(e) {
+            if(e) e.stopPropagation();
+            if (isPlaying) {
+                audio.pause();
+                updateIcons(false);
+            } else {
+                if(!audio.src) loadTrack(currentTrackIndex);
+                audio.play();
+                updateIcons(true);
+            }
+            isPlaying = !isPlaying;
+        }
+
+        function updateIcons(playing) {
+            const miniBtn = document.getElementById('mini-play-btn');
+            const fullBtnIcon = document.getElementById('full-play-icon');
+            const iconName = playing ? 'pause' : 'play';
+            
+            miniBtn.innerHTML = `<i data-lucide="${iconName}" class="w-6 h-6 fill-current text-emerald-500"></i>`;
+            fullBtnIcon.setAttribute('data-lucide', iconName);
+            lucide.createIcons();
+        }
+
+        function playRandom() {
+            currentTrackIndex = Math.floor(Math.random() * defaultTracks.length);
+            loadTrack(currentTrackIndex);
+            audio.play();
+            isPlaying = true;
+            updateIcons(true);
+        }
+
+        function nextTrack() {
+            currentTrackIndex = (currentTrackIndex + 1) % defaultTracks.length;
+            loadTrack(currentTrackIndex);
+            audio.play();
+            isPlaying = true;
+            updateIcons(true);
+        }
+
+        function prevTrack() {
+            currentTrackIndex = (currentTrackIndex - 1 + defaultTracks.length) % defaultTracks.length;
+            loadTrack(currentTrackIndex);
+            audio.play();
+            isPlaying = true;
+            updateIcons(true);
+        }
+
+        function toggleFullPlayer() {
+            document.getElementById('full-player').classList.toggle('open');
+        }
+
+        // Обновление прогресс-бара
+        audio.addEventListener('timeupdate', () => {
+            const progress = (audio.currentTime / audio.duration) * 100;
+            document.getElementById('progress').value = progress || 0;
+            
+            const curMin = Math.floor(audio.currentTime / 60);
+            const curSec = Math.floor(audio.currentTime % 60);
+            document.getElementById('current-time').innerText = `${curMin}:${curSec < 10 ? '0' : ''}${curSec}`;
+            
+            if(audio.duration) {
+                const durMin = Math.floor(audio.duration / 60);
+                const durSec = Math.floor(audio.duration % 60);
+                document.getElementById('duration').innerText = `${durMin}:${durSec < 10 ? '0' : ''}${durSec}`;
+            }
+        });
+
+        document.getElementById('progress').addEventListener('input', (e) => {
+            const seekTime = (e.target.value / 100) * audio.duration;
+            audio.currentTime = seekTime;
+        });
+
+        // Инициализация иконок
+        lucide.createIcons();
+
+        // Заполнение коллекции для красоты
+        const grid = document.getElementById('playlists-grid');
+        for(let i=1; i<=4; i++) {
+            grid.innerHTML += `
+                <div class="bg-white/5 p-3 rounded-2xl border border-white/5">
+                    <div class="aspect-square bg-emerald-900/20 rounded-xl mb-2 flex items-center justify-center">
+                        <i data-lucide="music" class="w-8 h-8 text-emerald-800"></i>
+                    </div>
+                    <p class="text-sm font-medium">Плейлист #${i}</p>
+                </div>
+            `;
+        }
+        lucide.createIcons();
+    </script>
+</body>
+</html>
