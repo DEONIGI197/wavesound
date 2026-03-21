@@ -2,141 +2,236 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>WaveSound</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#22C55E', // Наш зеленый акцент (чуть мягче кислотного)
+                        bgMain: '#000000', // Чисто черный фон как в ЯМ
+                        bgCard: '#121212', // Серый для карточек
+                        textMain: '#FFFFFF',
+                        textSec: '#8E8E93', // Серый для подзаголовков (iOS style)
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0D0D0D;
+            background-color: #000000;
             color: white;
-            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent; /* Убираем синий блик при клике */
+            user-select: none; /* Запрещаем выделение текста */
+            padding-bottom: calc(90px + env(safe-area-inset-bottom)); /* Отступ под плеер и навигацию */
         }
-        .neon-border {
-            box-shadow: 0 0 15px rgba(57, 255, 20, 0.3);
-            border: 1px solid rgba(57, 255, 20, 0.5);
+
+        /* Стиль для кастомного скроллбара (скрываем его) */
+        ::-webkit-scrollbar { width: 0; height: 0; }
+
+        /* Бегущая строка для длинных названий */
+        .marquee {
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
         }
-        .neon-text {
-            color: #39FF14;
-            text-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+        .marquee span {
+            display: inline-block;
+            animation: marquee 10s linear infinite;
         }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
+        @keyframes marquee {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-100%); }
         }
-        .nav-bar {
-            background: rgba(13, 13, 13, 0.9);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        /* Анимация волны */
+
+        /* Анимация волны (более плавная) */
         .wave-bar {
-            width: 4px;
-            background: #39FF14;
-            margin: 0 2px;
-            border-radius: 10px;
-            animation: bounce 1s ease-in-out infinite;
+            width: 3px;
+            background-color: #22C55E;
+            margin: 0 1.5px;
+            border-radius: 2px;
+            transition: height 0.2s ease;
         }
-        @keyframes bounce {
-            0%, 100% { height: 10px; }
-            50% { height: 40px; }
+
+        /* Класс для активной кнопки навигации */
+        .nav-link-active {
+            color: #22C55E !important;
+        }
+        .nav-link-active svg {
+            fill: #22C55E !important;
         }
     </style>
 </head>
-<body class="pb-24">
+<body class="antialiased">
 
-    <header class="p-6 flex justify-between items-center">
-        <div>
-            <h1 class="text-2xl font-800 tracking-tighter italic">WAVE<span class="neon-text">SOUND</span></h1>
-            <p class="text-xs text-gray-500 uppercase tracking-widest">Оставайся на волне</p>
-        </div>
-        <div class="w-10 h-10 rounded-full neon-border overflow-hidden">
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Profile">
-        </div>
-    </header>
+    <svg style="display: none;">
+        <symbol id="icon-home" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
+        <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></symbol>
+        <symbol id="icon-eq" viewBox="0 0 24 24"><path d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm1.5 14h-3v-1.5h3V17zm0-3h-3V7h3v7z"/></symbol>
+        <symbol id="icon-profile" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></symbol>
+        <symbol id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+        <symbol id="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></symbol>
+        <symbol id="icon-prev" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></symbol>
+        <symbol id="icon-next" viewBox="0 0 24 24"><path d="M16.5 12L8 18V6l8.5 6zm1.5 6h2V6h-2v12z"/></symbol>
+        <symbol id="icon-heart" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5 22 12.28 18.6 15.36 13.45 20.03L12 21.35z"/></symbol>
+        <symbol id="icon-search" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></symbol>
+    </svg>
 
-    <section class="px-6 mb-8">
-        <div class="glass-card p-8 flex flex-col items-center justify-center relative overflow-hidden h-64">
-            <div class="flex items-end justify-center h-20 mb-4" id="wave-container">
-                </div>
-            <div class="text-center z-10">
-                <h2 class="text-xl font-bold" id="track-title">Blinding Lights</h2>
-                <p class="text-gray-400 text-sm" id="artist-name">The Weeknd</p>
+    <main id="content-main" class="px-5 pt-4">
+        
+        <header class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-800 tracking-tighter">Моя волна</h1>
+            <div class="flex items-center gap-4">
+                <svg class="w-7 h-7 fill-textMain"><use xlink:href="#icon-search"></use></svg>
+                <img src="https://api.dicebear.com/8.x/notionists-neutral/svg?seed=Maks" alt="Avatar" class="w-9 h-9 rounded-full bg-bgCard border border-white/10">
             </div>
-            <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-green-500 opacity-10 blur-3xl"></div>
-        </div>
-    </section>
+        </header>
 
-    <section class="px-6 mb-10">
-        <div class="flex justify-between items-center mb-6">
-            <button class="text-gray-400">🔀</button>
-            <button class="text-2xl">⏮</button>
-            <button class="w-16 h-16 bg-[#39FF14] rounded-full flex items-center justify-center text-black text-3xl shadow-lg shadow-green-500/40">▶</button>
-            <button class="text-2xl">⏭</button>
-            <button class="text-gray-400">🔁</button>
-        </div>
-        <div class="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
-            <div class="bg-[#39FF14] h-full w-1/3"></div>
-        </div>
-    </section>
+        <section class="mb-10">
+            <div class="aspect-square w-full rounded-3xl relative overflow-hidden shadow-2xl shadow-brand/10 bg-bgCard flex flex-col justify-end p-6" style="background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%); border: 1px solid rgba(255,255,255,0.05);">
+                
+                <div class="absolute inset-0 flex items-center justify-center opacity-40" id="wave-container">
+                    </div>
 
-    <section class="px-6">
-        <h3 class="text-lg font-bold mb-4">Тренды недели</h3>
-        <div class="space-y-4">
-            <div class="flex items-center glass-card p-3">
-                <img src="https://i.scdn.co/image/ab67616d0000b27370ad9f661c479342465c1752" class="w-12 h-12 rounded-lg mr-4">
-                <div class="flex-1">
-                    <p class="font-semibold text-sm">Starboy</p>
-                    <p class="text-xs text-gray-500">The Weeknd</p>
+                <div class="relative z-10 flex justify-between items-center">
+                    <div>
+                        <p class="text-xs text-brand font-semibold uppercase tracking-widest mb-1">Бесконечный поток</p>
+                        <h2 class="text-2xl font-bold">Включи под настроение</h2>
+                    </div>
+                    <button class="w-16 h-16 bg-brand rounded-full flex items-center justify-center shadow-lg shadow-brand/30 transform active:scale-95 transition-transform">
+                        <svg class="w-8 h-8 fill-black translate-x-0.5"><use xlink:href="#icon-play"></use></svg>
+                    </button>
                 </div>
-                <button class="text-[#39FF14]">❤</button>
             </div>
-            <div class="flex items-center glass-card p-3">
-                <img src="https://i.scdn.co/image/ab67616d0000b273204787fa5417036496942c4c" class="w-12 h-12 rounded-lg mr-4">
-                <div class="flex-1">
-                    <p class="font-semibold text-sm">After Dark</p>
-                    <p class="text-xs text-gray-500">Mr.Kitty</p>
+        </section>
+
+        <section class="mb-10">
+            <h3 class="text-xl font-bold mb-5 px-1">Вы недавно слушали</h3>
+            <div class="flex gap-4 overflow-x-auto pb-2 -mx-5 px-5">
+                <div class="flex-none w-36">
+                    <img src="https://avatars.yandex.net/get-music-content/11499252/78419616.a.29415664-1/200x200" class="w-36 h-36 rounded-2xl mb-3 shadow-lg">
+                    <p class="text-sm font-semibold truncate">Plastic Beach</p>
+                    <p class="text-xs text-textSec truncate">Gorillaz</p>
                 </div>
-                <button class="text-gray-500">❤</button>
+                <div class="flex-none w-36">
+                    <img src="https://avatars.yandex.net/get-music-content/9831720/190f7d54.a.27649581-1/200x200" class="w-36 h-36 rounded-2xl mb-3 shadow-lg">
+                    <p class="text-sm font-semibold truncate">Un Verano Sin Ti</p>
+                    <p class="text-xs text-textSec truncate">Bad Bunny</p>
+                </div>
+                <div class="flex-none w-36">
+                    <img src="https://avatars.yandex.net/get-music-content/6300486/492b4505.a.21639316-1/200x200" class="w-36 h-36 rounded-2xl mb-3 shadow-lg">
+                    <p class="text-sm font-semibold truncate">Dawn FM</p>
+                    <p class="text-xs text-textSec truncate">The Weeknd</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div class="fixed bottom-0 left-0 right-0 z-50">
+        
+        <div class="px-2 pb-2">
+            <div class="bg-bgCard/95 backdrop-blur-lg rounded-2xl p-2.5 flex items-center shadow-2xl border border-white/05" style="box-shadow: 0 -10px 20px rgba(0,0,0,0.5);">
+                <img src="https://avatars.yandex.net/get-music-content/6300486/492b4505.a.21639316-1/50x50" class="w-11 h-11 rounded-lg mr-3.5 flex-none">
+                <div class="flex-1 overflow-hidden mr-3">
+                    <div class="marquee"><span class="text-sm font-semibold">Take My Breath</span></div>
+                    <p class="text-xs text-textSec truncate">The Weeknd</p>
+                </div>
+                <div class="flex items-center gap-5 flex-none pr-2">
+                    <button><svg class="w-6 h-6 fill-textSec active:fill-brand"><use xlink:href="#icon-heart"></use></svg></button>
+                    <button class="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 fill-black translate-x-0.5"><use xlink:href="#icon-play"></use></svg>
+                    </button>
+                    <button><svg class="w-6 h-6 fill-textMain"><use xlink:href="#icon-next"></use></svg></button>
+                </div>
+                <div class="absolute bottom-0 left-3 right-3 h-0.5 bg-white/10 rounded-full overflow-hidden">
+                    <div class="absolute inset-y-0 left-0 bg-brand rounded-full" style="width: 35%"></div>
+                </div>
             </div>
         </div>
-    </section>
 
-    <nav class="fixed bottom-0 left-0 right-0 nav-bar flex justify-around p-4 z-50">
-        <button class="neon-text flex flex-col items-center">
-            <span class="text-xl">🏠</span>
-            <span class="text-[10px] mt-1">Главная</span>
-        </button>
-        <button class="text-gray-500 flex flex-col items-center">
-            <span class="text-xl">📊</span>
-            <span class="text-[10px] mt-1">Чарты</span>
-        </button>
-        <button class="text-gray-500 flex flex-col items-center">
-            <span class="text-xl">🎚</span>
-            <span class="text-[10px] mt-1">Эквалайзер</span>
-        </button>
-        <button class="text-gray-500 flex flex-col items-center">
-            <span class="text-xl">👤</span>
-            <span class="text-[10px] mt-1">Профиль</span>
-        </button>
-    </nav>
+        <nav class="bg-bgMain border-top border-white/05 flex justify-around pt-3 pb-safe-area shadow-inner">
+            <a href="#" class="nav-link nav-link-active flex flex-col items-center gap-1.5 w-20 text-textSec">
+                <svg class="w-6 h-6 fill-textSec"><use xlink:href="#icon-home"></use></svg>
+                <span class="text-[10px] font-medium">Главная</span>
+            </a>
+            <a href="#" class="flex flex-col items-center gap-1.5 w-20 text-textSec hover:text-textMain">
+                <svg class="w-6 h-6 fill-textSec"><use xlink:href="#icon-chart"></use></svg>
+                <span class="text-[10px] font-medium">Чарты</span>
+            </a>
+            <a href="#" class="flex flex-col items-center gap-1.5 w-20 text-textSec hover:text-textMain">
+                <svg class="w-6 h-6 fill-textSec"><use xlink:href="#icon-eq"></use></svg>
+                <span class="text-[10px] font-medium">Настройка</span>
+            </a>
+            <a href="#" class="flex flex-col items-center gap-1.5 w-20 text-textSec hover:text-textMain">
+                <svg class="w-6 h-6 fill-textSec"><use xlink:href="#icon-profile"></use></svg>
+                <span class="text-[10px] font-medium">Профиль</span>
+            </a>
+        </nav>
+    </div>
 
     <script>
-        // Инициализация Telegram Mini App
+        // Инициализация Telegram Web App SDK
         const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.headerColor = '#0D0D0D';
+        tg.expand(); // Развернуть на весь экран
+        tg.ready();
 
-        // Генерация волны
+        // Установка цветов темы TG, чтобы соответствовали дизайну
+        tg.setHeaderColor('#000000');
+        tg.setBackgroundColor('#000000');
+
+        // Генерация волнового визуализатора (как в Яндекс.Эфире/Волне)
         const waveContainer = document.getElementById('wave-container');
-        for (let i = 0; i < 20; i++) {
+        const barCount = 40;
+        const bars = [];
+
+        for (let i = 0; i < barCount; i++) {
             const bar = document.createElement('div');
             bar.className = 'wave-bar';
-            bar.style.animationDelay = `${i * 0.05}s`;
+            // Начальная случайная высота
+            bar.style.height = `${Math.random() * 60 + 20}%`; 
             waveContainer.appendChild(bar);
+            bars.push(bar);
         }
+
+        // Функция анимации волны (симуляция)
+        function animateWave() {
+            bars.forEach(bar => {
+                // Плавно меняем высоту каждой плашки
+                const newHeight = Math.random() * 70 + 15; // от 15% до 85%
+                bar.style.height = `${newHeight}%`;
+            });
+        }
+
+        // Запускаем анимацию каждые 200мс (плавность через CSS transition)
+        setInterval(animateWave, 250);
+
+        // Простая логика переключения активной вкладки (для демонстрации)
+        const navLinks = document.querySelectorAll('nav a');
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelector('.nav-link-active')?.classList.remove('nav-link-active');
+                link.classList.add('nav-link-active');
+                
+                // Вибрация при клике (Taptic Engine)
+                tg.HapticFeedback.impactOccurred('light');
+            });
+        });
+
+        // Вибрация при клике на главную кнопку Play
+        document.querySelector('.shadow-brand\/30').addEventListener('click', () => {
+             tg.HapticFeedback.notificationOccurred('success');
+        });
+
     </script>
 </body>
 </html>
